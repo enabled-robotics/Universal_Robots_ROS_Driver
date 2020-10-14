@@ -37,6 +37,7 @@
 #include <sstream>
 
 #include <ur_robot_driver/ur/calibration_checker.h>
+#include <ur_robot_driver/ur/popup_message.h>
 
 namespace ur_driver
 {
@@ -153,6 +154,10 @@ ur_driver::UrDriver::UrDriver(const std::string& robot_ip, const std::string& sc
 
   reverse_port_ = reverse_port;
   watchdog_thread_ = std::thread(&UrDriver::startWatchdog, this);
+
+  LOG_INFO("Starting popup thread");
+  popupThread = std::thread(&UrDriver::getPopupMessage, this);
+  LOG_INFO("Popup thread started!");
 
   LOG_DEBUG("Initialization done");
 }
@@ -319,6 +324,47 @@ bool UrDriver::sendRobotProgram()
   {
     LOG_ERROR("Tried to send robot program directly while not in headless mode");
     return false;
+  }
+}
+
+void UrDriver::getPopupMessage()
+{
+  if (primary_stream_ == nullptr)
+  {
+    throw std::runtime_error("getPopupMessage() called without a primary interface connection being established.");
+  }
+
+  primary_stream_->disconnect();
+
+  while(true)
+  {
+
+    ROS_INFO("Hurra1");
+
+    primary_interface::PrimaryParser parser;
+    comm::URProducer<ur_driver::primary_interface::PackageHeader> prod(*primary_stream_, parser);
+    ROS_INFO("Hurra2");
+    prod.setupProducer();
+
+    ROS_INFO("Hurra3");
+
+    PopupMessage consumer;
+
+    ROS_INFO("Hurra4");
+    comm::INotifier notifier;
+
+    comm::Pipeline<ur_driver::primary_interface::PackageHeader> pipeline(prod, consumer, "Pipeline", notifier);
+    pipeline.run();
+
+    ROS_INFO("Waiting for popup message");
+    while (!consumer.gotAMsg())
+    {
+      ros::Duration(1).sleep();
+    }
+
+    ROS_DEBUG_STREAM("Got popup message from robot.");
+    ROS_INFO("Popup mesage:");
+    // ROS_INFO_STREAM(PopupMessage.toString());
   }
 }
 }  // namespace ur_driver

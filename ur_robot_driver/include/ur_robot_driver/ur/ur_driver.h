@@ -195,6 +195,15 @@ public:
   bool sendRobotProgram();
 
   /*!
+   * \brief Get popup message text.
+   *
+   * TODO: Insert description.
+   *
+   * \returns none (void)
+   */
+  void getPopupMessage();
+
+  /*!
    * \brief Returns version information about the currently connected robot
    */
   const VersionInformation& getVersion()
@@ -231,6 +240,8 @@ private:
   bool non_blocking_read_;
 
   VersionInformation robot_version_;
+
+  std::thread popupThread;
 };
 }  // namespace ur_driver
 #endif  // ifndef UR_RTDE_DRIVER_UR_UR_DRIVER_H_INCLUDED
