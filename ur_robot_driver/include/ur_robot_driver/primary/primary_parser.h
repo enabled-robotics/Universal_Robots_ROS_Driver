@@ -30,6 +30,7 @@
 #include "ur_robot_driver/primary/robot_state/kinematics_info.h"
 //#include "ur_robot_driver/primary/robot_state/master_board.h"
 #include "ur_robot_driver/primary/robot_message/version_message.h"
+#include "ur_robot_driver/primary/robot_message/popup_message.h"
 
 namespace ur_driver
 {
@@ -124,12 +125,16 @@ public:
         bp.parse(source);
         bp.parse(message_type);
 
+        std::cout << "Got a robot message of type " << (uint)message_type << std::endl;
+
         std::unique_ptr<PrimaryPackage> packet(messageFromType(message_type, timestamp, source));
         if (!packet->parseWith(bp))
         {
           LOG_ERROR("Package parsing of type %d failed!", static_cast<int>(message_type));
           return false;
         }
+
+        std::cout << packet->toString() << std::endl;
 
         results.push_back(std::move(packet));
         return true;
@@ -176,6 +181,8 @@ private:
         return new MBD;*/
       case RobotMessagePackageType::ROBOT_MESSAGE_VERSION:
         return new VersionMessage(timestamp, source);
+      case RobotMessagePackageType::PROGRAM_STATE_MESSAGE_VARIABLE_UPDATE: // char robotMessageType = ROBOT_MESSAGE_TYPE_POPUP = 2
+        return new PopupMessage(timestamp, source);
       default:
         return new RobotMessage(timestamp, source);
     }
